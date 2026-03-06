@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 
+import { registerCompletionCommand } from "./commands/completion.js";
 import { registerLinkCommands } from "./commands/links.js";
 import { registerSessionCommands } from "./commands/sessions.js";
 import { registerSpeakerCommands } from "./commands/speakers.js";
@@ -37,6 +38,7 @@ program.addCommand(describeCommand);
 registerSessionCommands(getCommand, describeCommand, getConferenceData);
 registerSpeakerCommands(getCommand, describeCommand, getConferenceData);
 registerLinkCommands(getCommand, program, getConferenceData);
+registerCompletionCommand(program);
 
 program.showHelpAfterError();
 

@@ -107,6 +107,39 @@ Short aliases are also available: `cndactl get sess`, `cndactl describe sess <qu
 
 - Bypasses local Sessionize cache for that run and always fetches fresh data.
 
+## Shell Completions
+
+`cndactl` ships with built-in zsh completion support — no additional tools needed.
+
+### Automatic setup (recommended)
+
+Run the following once to install the completion script and configure your shell automatically:
+
+```bash
+cndactl completion install
+```
+
+This writes the completion function to `~/.zfunc/_cndactl` and adds the required `fpath` and `compinit` lines to `~/.zshrc` if they are not already present. Reload your shell to activate:
+
+```bash
+source ~/.zshrc
+```
+
+### Manual setup
+
+If you prefer to manage completions yourself, print the script and source it on demand:
+
+```bash
+# Source completions for the current session only
+source <(cndactl completion)
+
+# Or place the script on your fpath
+cndactl completion > ~/.zfunc/_cndactl
+# then ensure ~/.zshrc contains:
+#   fpath=(~/.zfunc $fpath)
+#   autoload -Uz compinit && compinit
+```
+
 ## Data Source
 
 The CLI reads from the Sessionize `All` endpoint for event key `7o54a33i`:
