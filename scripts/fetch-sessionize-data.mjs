@@ -1,11 +1,11 @@
 import { writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import config from "../src/data/sessionize-config.json" with { type: "json" };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SESSIONIZE_EVENT_KEY = "7o54a33i";
-const url = `https://sessionize.com/api/v2/${SESSIONIZE_EVENT_KEY}/view/All`;
+const url = `https://sessionize.com/api/v2/${config.eventKey}/view/All`;
 
 console.log(`Fetching Sessionize data from ${url}...`);
 
