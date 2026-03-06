@@ -16,9 +16,7 @@
   },
   "scripts": {
     "build": "bunx tsc -p tsconfig.json",
-    "check": "bun run typecheck && bun run test",
     "dev": "bun run src/cli.ts",
-    "pack:local": "bun pack",
     "publish:dry-run": "bun publish --dry-run",
     "publish:release": "bun publish",
     "test": "bunx vitest run",
