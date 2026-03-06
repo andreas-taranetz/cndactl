@@ -11,6 +11,10 @@
     "dist",
     "README.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreas-taranetz/cndactl.git"
+  },
   "engines": {
     "node": ">=22"
   },
