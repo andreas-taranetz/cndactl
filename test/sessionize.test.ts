@@ -1,58 +1,28 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { fetchSessionizeData, SESSIONIZE_ALL_URL } from "../src/data/sessionize.js";
-import { sampleSessionizeData } from "./fixtures.js";
+import { normalizeConferenceData } from "../src/data/normalize.js";
+import { sessionizeData, SESSIONIZE_ALL_URL } from "../src/data/sessionize.js";
 
-describe("fetchSessionizeData", () => {
-  it("requests the Sessionize all endpoint", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue(sampleSessionizeData)
-    });
-
-    const data = await fetchSessionizeData(fetchImpl as typeof fetch);
-
-    expect(data).toEqual(sampleSessionizeData);
-    expect(fetchImpl).toHaveBeenCalledWith(SESSIONIZE_ALL_URL, {
-      headers: {
-        accept: "application/json"
-      }
-    });
+describe("sessionizeData", () => {
+  it("exports a URL pointing to the Sessionize all endpoint", () => {
+    expect(SESSIONIZE_ALL_URL).toMatch(/sessionize\.com\/api\/v2\/.+\/view\/All/);
   });
 
-  it("throws on non-ok responses", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 503
-    });
-
-    await expect(fetchSessionizeData(fetchImpl as typeof fetch)).rejects.toThrow(
-      "Sessionize request failed with status 503"
-    );
+  it("has a sessions array", () => {
+    expect(Array.isArray(sessionizeData.sessions)).toBe(true);
   });
 
-  it("validates that the payload is an object", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue(null)
-    });
-
-    await expect(fetchSessionizeData(fetchImpl as typeof fetch)).rejects.toThrow(
-      "Sessionize payload is not an object"
-    );
+  it("has a speakers array", () => {
+    expect(Array.isArray(sessionizeData.speakers)).toBe(true);
   });
 
-  it("validates required top-level arrays", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        sessions: [],
-        speakers: []
-      })
-    });
+  it("has a rooms array", () => {
+    expect(Array.isArray(sessionizeData.rooms)).toBe(true);
+  });
 
-    await expect(fetchSessionizeData(fetchImpl as typeof fetch)).rejects.toThrow(
-      "Sessionize payload is missing rooms array"
-    );
+  it("can be normalized into conference data", () => {
+    const data = normalizeConferenceData(sessionizeData);
+    expect(Array.isArray(data.sessions)).toBe(true);
+    expect(Array.isArray(data.speakers)).toBe(true);
   });
 });

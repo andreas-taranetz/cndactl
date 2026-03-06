@@ -19,7 +19,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "bunx tsc -p tsconfig.json",
+    "build": "bun run fetch-data && bunx tsc -p tsconfig.json",
+    "fetch-data": "node scripts/fetch-sessionize-data.mjs",
     "dev": "bun run src/cli.ts",
     "prepare": "husky",
     "publish:dry-run": "bun publish --dry-run",

@@ -6,7 +6,7 @@ import { registerLinkCommands } from "./commands/links.js";
 import { registerSessionCommands } from "./commands/sessions.js";
 import { registerSpeakerCommands } from "./commands/speakers.js";
 import { normalizeConferenceData } from "./data/normalize.js";
-import { fetchSessionizeData } from "./data/sessionize.js";
+import { sessionizeData } from "./data/sessionize.js";
 import { type ConferenceData } from "./domain/types.js";
 
 let conferenceDataPromise: Promise<ConferenceData> | undefined;
@@ -47,7 +47,7 @@ try {
 }
 
 async function getConferenceData(): Promise<ConferenceData> {
-  conferenceDataPromise ??= fetchSessionizeData().then(normalizeConferenceData);
+  conferenceDataPromise ??= Promise.resolve(normalizeConferenceData(sessionizeData));
   return conferenceDataPromise;
 }
 
