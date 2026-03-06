@@ -11,7 +11,13 @@ This document is for contributors and maintainers working on `cndactl`.
 
 ```bash
 bun install
+bun run prepare
 ```
+
+`bun run prepare` installs local Git hooks via Husky:
+
+- `pre-commit` runs `bun run typecheck`
+- `pre-push` runs `bun run test`
 
 ## Common Workflows
 
