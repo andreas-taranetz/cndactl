@@ -8,6 +8,7 @@ import { registerSpeakerCommands } from "./commands/speakers.js";
 import { normalizeConferenceData } from "./data/normalize.js";
 import { fetchSessionizeData } from "./data/sessionize.js";
 import { type ConferenceData } from "./domain/types.js";
+import packageJson from "../package.json" with { type: "json" };
 
 let conferenceDataPromise: Promise<ConferenceData> | undefined;
 
@@ -23,7 +24,7 @@ const examples = {
 program
   .name("cndactl")
   .description("Browse Cloud Native Days Austria from the terminal")
-  .version("0.1.0");
+  .version(packageJson.version);
 
 program.addHelpText("after", formatExamples(examples.root));
 getCommand.addHelpText("after", formatExamples(examples.get));
