@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 
+import { runInteractiveMode } from "./commands/interactive.js";
 import { registerLinkCommands } from "./commands/links.js";
 import { registerSessionCommands } from "./commands/sessions.js";
 import { registerSpeakerCommands } from "./commands/speakers.js";
@@ -39,6 +40,9 @@ registerSpeakerCommands(getCommand, describeCommand, getConferenceData);
 registerLinkCommands(getCommand, program, getConferenceData);
 
 program.showHelpAfterError();
+program.action(async () => {
+  await runInteractiveMode(getConferenceData);
+});
 
 try {
   await program.parseAsync(process.argv);
