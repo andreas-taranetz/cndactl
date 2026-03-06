@@ -1,6 +1,31 @@
-import pc from "picocolors";
+import pc, { bold } from "picocolors";
 
 import { type EventLink, type Session, type Speaker } from "../domain/types.js";
+type RenderSpeakerImageAscii = (...args: any[]) => Promise<string>;
+
+let cachedRenderSpeakerImageAscii: RenderSpeakerImageAscii | null = null;
+
+export function setRenderSpeakerImageAsciiForTests(renderer: RenderSpeakerImageAscii): void {
+  cachedRenderSpeakerImageAscii = renderer;
+}
+
+export function resetRenderSpeakerImageAsciiForTests(): void {
+  cachedRenderSpeakerImageAscii = null;
+}
+
+async function renderSpeakerImageAscii(
+	...args: Parameters<RenderSpeakerImageAscii>
+): ReturnType<RenderSpeakerImageAscii> {
+	if (!cachedRenderSpeakerImageAscii) {
+		const module = await import("./speaker-image.js");
+		cachedRenderSpeakerImageAscii = module.renderSpeakerImageAscii as RenderSpeakerImageAscii;
+	}
+
+	return cachedRenderSpeakerImageAscii(...args);
+}
+
+
+const INLINE_IMAGE_TEXT_INDENT = 42;
 
 export function renderSessionList(sessions: Session[]): string {
   if (sessions.length === 0) {
@@ -49,7 +74,21 @@ export function renderSpeakerList(speakers: Speaker[]): string {
     .join("\n\n");
 }
 
-export function renderSpeakerDetail(speaker: Speaker, sessions: Session[]): string {
+export async function renderSpeakerDetail(speaker: Speaker, sessions: Session[]): Promise<string> {
+  let speakerImage = "";
+
+  // Only attempt to fetch/render speaker images in interactive terminals,
+  // unless explicitly disabled via env var.
+  if (process.stdout.isTTY && process.env.SPEAKER_IMAGES !== "0") {
+    try {
+      speakerImage = await renderSpeakerImageAscii(speaker.profilePicture);
+    } catch {
+      speakerImage = "";
+    }
+  }
+
+  const heading = `${pc.bold(speaker.fullName)} (${pc.cyan(speaker.id)})`;
+  const subtitle = speaker.tagLine || "";
   const talkLines = sessions.length
     ? sessions.map((session) => `- ${session.title} (${session.id})`).join("\n")
     : "- No talks yet";
@@ -57,9 +96,12 @@ export function renderSpeakerDetail(speaker: Speaker, sessions: Session[]): stri
     ? speaker.links.map((link) => `- ${link.label} (${link.type}): ${link.url}`).join("\n")
     : "- No speaker links available";
 
+  const headerBlock = isNativeInlineImage(speakerImage)
+    ? renderHeaderNextToImage(speakerImage, heading, subtitle)
+    : [speakerImage, heading, subtitle].filter(Boolean).join("\n");
+
   return [
-    `${pc.bold(speaker.fullName)} (${pc.cyan(speaker.id)})`,
-    speaker.tagLine || "",
+    headerBlock,
     "",
     speaker.bio || "No bio available.",
     "",
@@ -69,7 +111,7 @@ export function renderSpeakerDetail(speaker: Speaker, sessions: Session[]): stri
     "Links:",
     links
   ]
-    .filter((line, index, lines) => !(line === "" && lines[index - 1] === ""))
+    .filter((line, index, lines) => !(line === "" && (index === 0 || lines[index - 1] === "")))
     .join("\n");
 }
 
@@ -81,4 +123,18 @@ function formatSchedule(startsAt: string | null, endsAt: string | null, room: st
   const time = startsAt && endsAt ? `${startsAt} - ${endsAt}` : "schedule pending";
   const roomLabel = room ?? "room pending";
   return `${time} | ${roomLabel}`;
+}
+
+function isNativeInlineImage(value: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return value.includes("\u001B]1337;File=") || value.includes("\u001B_G");
+}
+
+function renderHeaderNextToImage(image: string, heading: string, subtitle: string): string {
+  const indent = " ".repeat(INLINE_IMAGE_TEXT_INDENT);
+  const subtitleLine = subtitle ? `\n${indent}${subtitle}` : "";
+  return `${image}${indent}${heading}${subtitleLine}`;
 }

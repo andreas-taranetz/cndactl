@@ -66,7 +66,7 @@ async function describeSpeaker(getData: () => Promise<ConferenceData>, query: st
     throw new Error(`No speaker found for '${query}'`);
   }
 
-  console.log(renderSpeakerDetail(speaker, sessionsForSpeaker(data, speaker.id)));
+  console.log(await renderSpeakerDetail(speaker, sessionsForSpeaker(data, speaker.id)));
 }
 
 function formatExamples(values: string[]): string {

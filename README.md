@@ -79,6 +79,7 @@ cndactl open speaker "Alex Example" linkedin
 `cndactl describe speaker <query>`
 
 - Shows a single speaker by exact id or partial name match.
+- Attempts to render the speaker profile picture using terminal image protocols (for example iTerm2/Kitty support), then falls back to text-only details when rendering is unavailable.
 
 `cndactl get links`
 
