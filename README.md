@@ -55,6 +55,7 @@ cndactl get spk
 cndactl describe speaker "Alex Example"
 cndactl describe spk "Alex Example"
 cndactl get links
+cndactl get sessions --no-cache
 cndactl open tickets
 cndactl open website
 cndactl open event venue
@@ -101,6 +102,10 @@ Short aliases are also available: `cndactl get sess`, `cndactl describe sess <qu
 
 - Opens a speaker link such as `linkedin`, `blog`, `sessionize`, or `company-website`.
 
+`cndactl ... --no-cache`
+
+- Bypasses local Sessionize cache for that run and always fetches fresh data.
+
 ## Data Source
 
 The CLI reads from the Sessionize `All` endpoint for event key `7o54a33i`:
@@ -108,4 +113,14 @@ The CLI reads from the Sessionize `All` endpoint for event key `7o54a33i`:
 `https://sessionize.com/api/v2/7o54a33i/view/All`
 
 The app currently trusts that this feed is already configured to expose the intended public speaker and session set.
+
+Sessionize data is cached locally in the operating system cache directory (for example `~/.cache/cndactl` on Linux/macOS, `%LOCALAPPDATA%\\cndactl` on Windows). The cache is refreshed every 30 minutes by default.
+
+You can change the refresh interval with `CNDACTL_SESSIONIZE_CACHE_TTL_MINUTES`:
+
+```bash
+CNDACTL_SESSIONIZE_CACHE_TTL_MINUTES=10 cndactl get sessions
+```
+
+If cache reads/writes fail, `cndactl` automatically falls back to direct Sessionize fetches.
 
