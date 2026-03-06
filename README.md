@@ -109,10 +109,3 @@ The CLI reads from the Sessionize `All` endpoint for event key `7o54a33i`:
 
 The app currently trusts that this feed is already configured to expose the intended public speaker and session set.
 
-## Maintainer Docs
-
-Development and contributor workflows are documented separately:
-
-- [Development](docs/DEVELOPMENT.md)
-- [Publishing](docs/PUBLISHING.md)
-
