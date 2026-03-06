@@ -19,7 +19,13 @@ if (!response.ok) {
 
 const data = await response.json();
 
-if (!Array.isArray(data.sessions) || !Array.isArray(data.speakers) || !Array.isArray(data.rooms)) {
+if (
+  typeof data !== "object" ||
+  data === null ||
+  !Array.isArray(data.sessions) ||
+  !Array.isArray(data.speakers) ||
+  !Array.isArray(data.rooms)
+) {
   throw new Error("Unexpected Sessionize response shape");
 }
 
