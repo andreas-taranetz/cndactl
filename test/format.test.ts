@@ -1,16 +1,43 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   renderEventLinks,
+  resetRenderSpeakerImageAsciiForTests,
   renderSessionDetail,
   renderSessionList,
   renderSpeakerDetail,
-  renderSpeakerList
+  renderSpeakerList,
+  setRenderSpeakerImageAsciiForTests
 } from "../src/commands/format.js";
 import { normalizeConferenceData } from "../src/data/normalize.js";
 import { sampleSessionizeData } from "./fixtures.js";
 
+const renderSpeakerImageAsciiMock = vi.fn<(_: string) => Promise<string>>();
+
 describe("command formatting", () => {
+  const originalIsTTY = process.stdout.isTTY;
+
+  beforeEach(() => {
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      value: true
+    });
+    delete process.env.SPEAKER_IMAGES;
+    renderSpeakerImageAsciiMock.mockReset();
+    setRenderSpeakerImageAsciiForTests(renderSpeakerImageAsciiMock);
+  });
+
+  afterEach(() => {
+    resetRenderSpeakerImageAsciiForTests();
+  });
+
+  afterAll(() => {
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      value: originalIsTTY
+    });
+  });
+
   it("renders session list output", () => {
     const data = normalizeConferenceData(sampleSessionizeData);
     const output = renderSessionList(data.sessions);
@@ -20,13 +47,34 @@ describe("command formatting", () => {
     expect(output).not.toContain("confirmed");
   });
 
-  it("renders speaker detail with accepted talks", () => {
+  it("renders speaker detail with accepted talks", async () => {
+    renderSpeakerImageAsciiMock.mockResolvedValueOnce("ASCII_IMAGE");
     const data = normalizeConferenceData(sampleSessionizeData);
     const speaker = data.speakers[0];
-    const output = renderSpeakerDetail(speaker, data.sessions);
+    const output = await renderSpeakerDetail(speaker, data.sessions);
 
+    expect(output).toContain("ASCII_IMAGE");
     expect(output).toContain("Talks:");
     expect(output).toContain("LinkedIn");
+  });
+
+  it("renders speaker heading next to native inline image", async () => {
+    renderSpeakerImageAsciiMock.mockResolvedValueOnce("\u001B]1337;File=abc\u0007");
+    const data = normalizeConferenceData(sampleSessionizeData);
+    const speaker = data.speakers[0];
+    const output = await renderSpeakerDetail(speaker, data.sessions);
+
+    expect(output).toContain("\u001B]1337;File=abc\u0007");
+    expect(output).toMatch(/\u001B\]1337;File=abc\u0007\s{20,}(?:\u001B\[1m)?Alex Example/);
+    expect(output).toContain("Platform Engineer @ Example Labs");
+  });
+
+  it("falls back to text when image rendering throws", async () => {
+    renderSpeakerImageAsciiMock.mockRejectedValueOnce(new Error("image failed"));
+    const data = normalizeConferenceData(sampleSessionizeData);
+    const speaker = data.speakers[0];
+
+    await expect(renderSpeakerDetail(speaker, data.sessions)).resolves.toContain("Alex Example");
   });
 
   it("renders event links", () => {
@@ -65,8 +113,9 @@ describe("command formatting", () => {
     expect(output).toContain("Recording: https://example.com/recording");
   });
 
-  it("renders speaker detail fallbacks", () => {
-    const output = renderSpeakerDetail(
+  it("renders speaker detail fallbacks", async () => {
+    renderSpeakerImageAsciiMock.mockResolvedValueOnce("");
+    const output = await renderSpeakerDetail(
       {
         id: "speaker-2",
         fullName: "Dana NoLinks",

@@ -1,14 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
-
-const openMock = vi.fn();
-
-vi.mock("open", () => ({
-  default: openMock
-}));
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  openUrl,
+  resetOpenImplementationForTests,
+  setOpenImplementationForTests
+} from "../src/platform/open.js";
 
 describe("openUrl", () => {
+  afterEach(() => {
+    resetOpenImplementationForTests();
+  });
+
   it("delegates to the open package", async () => {
-    const { openUrl } = await import("../src/platform/open.js");
+    const openMock = vi.fn();
+    setOpenImplementationForTests(openMock);
 
     await openUrl("https://cloudnativedays.at/");
 

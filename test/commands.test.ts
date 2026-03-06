@@ -1,20 +1,17 @@
 import { Command } from "commander";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setRenderSpeakerImageAsciiForTests } from "../src/commands/format.js";
 import { registerLinkCommands } from "../src/commands/links.js";
 import { registerSessionCommands } from "../src/commands/sessions.js";
 import { registerSpeakerCommands } from "../src/commands/speakers.js";
 import { normalizeConferenceData } from "../src/data/normalize.js";
 import { type ConferenceData } from "../src/domain/types.js";
+import { resetOpenImplementationForTests, setOpenImplementationForTests } from "../src/platform/open.js";
 import { sampleSessionizeData } from "./fixtures.js";
 
-const { openUrlMock } = vi.hoisted(() => ({
-  openUrlMock: vi.fn()
-}));
-
-vi.mock("../src/platform/open.js", () => ({
-  openUrl: openUrlMock
-}));
+const openUrlMock = vi.fn();
+const renderSpeakerImageAsciiMock = vi.fn<(_: string) => Promise<string>>();
 
 describe("command registration", () => {
   const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -23,6 +20,14 @@ describe("command registration", () => {
   beforeEach(() => {
     logSpy.mockClear();
     openUrlMock.mockReset();
+    renderSpeakerImageAsciiMock.mockReset();
+    renderSpeakerImageAsciiMock.mockResolvedValue("");
+    setOpenImplementationForTests(openUrlMock);
+    setRenderSpeakerImageAsciiForTests(renderSpeakerImageAsciiMock);
+  });
+
+  afterEach(() => {
+    resetOpenImplementationForTests();
   });
 
   function createProgram(sourceData: ConferenceData = data): Command {
