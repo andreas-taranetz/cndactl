@@ -22,7 +22,7 @@
     "build": "bunx tsc -p tsconfig.json",
     "dev": "bun run src/cli.ts",
     "prepack": "bun run build",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "publish:dry-run": "bun publish --dry-run",
     "publish:release": "bun publish",
     "test": "bunx vitest run",
