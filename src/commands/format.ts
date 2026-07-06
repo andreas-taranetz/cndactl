@@ -44,14 +44,14 @@ export function renderSessionList(sessions: Session[]): string {
 export function renderSessionDetail(session: Session): string {
   const speakers = session.speakers.map((speaker) => `- ${speaker.fullName}`).join("\n") || "- Unknown speaker";
   const links = [
-    session.liveUrl ? `Live: ${session.liveUrl}` : null,
-    session.recordingUrl ? `Recording: ${session.recordingUrl}` : null
+    session.liveUrl ? hyperlink("Live", session.liveUrl) : null,
+    session.recordingUrl ? hyperlink("Recording", session.recordingUrl) : null
   ]
     .filter(Boolean)
     .join("\n");
 
   return [
-    `${pc.bold(session.title)} (${pc.cyan(session.id)})`,
+    `${pc.bold(session.title)}`,
     `Schedule: ${formatSchedule(session.startsAt, session.endsAt, session.room)}`,
     "Speakers:",
     speakers,
@@ -66,10 +66,14 @@ export function renderSpeakerList(speakers: Speaker[]): string {
     return "No speakers found.";
   }
 
+  const prefixLen = uniquePrefixLength(speakers.map((s) => s.id));
   return speakers
     .map((speaker) => {
+      const name = speaker.isTopSpeaker ? pc.bold(speaker.fullName) : speaker.fullName;
+      const star = speaker.isTopSpeaker ? `${pc.yellow("★")} ` : "  ";
       const subtitle = speaker.tagLine || "Speaker";
-      return `${pc.cyan(speaker.id)}  ${speaker.fullName}\n  ${pc.gray(subtitle)}`;
+      const shortId = speaker.id.slice(0, prefixLen);
+      return `${pc.cyan(shortId)}  ${star}${name}\n  ${pc.gray(subtitle)}`;
     })
     .join("\n\n");
 }
@@ -87,18 +91,16 @@ export async function renderSpeakerDetail(speaker: Speaker, sessions: Session[])
     }
   }
 
-  const heading = `${pc.bold(speaker.fullName)} (${pc.cyan(speaker.id)})`;
+  const heading = `${pc.bold(speaker.fullName)}`;
   const subtitle = speaker.tagLine || "";
   const talkLines = sessions.length
-    ? sessions.map((session) => `- ${session.title} (${session.id})`).join("\n")
+    ? sessions.map((session) => `- ${session.title}`).join("\n")
     : "- No talks yet";
   const links = speaker.links.length
-    ? speaker.links.map((link) => `- ${link.label} (${link.type}): ${link.url}`).join("\n")
+    ? speaker.links.map((link) => `- ${hyperlink(`${link.label} (${link.type})`, link.url)}`).join("\n")
     : "- No speaker links available";
 
-  const headerBlock = isNativeInlineImage(speakerImage)
-    ? renderHeaderNextToImage(speakerImage, heading, subtitle)
-    : [speakerImage, heading, subtitle].filter(Boolean).join("\n");
+  const headerBlock = [speakerImage, heading, subtitle].filter(Boolean).join("\n");
 
   return [
     headerBlock,
@@ -116,7 +118,14 @@ export async function renderSpeakerDetail(speaker: Speaker, sessions: Session[])
 }
 
 export function renderEventLinks(links: EventLink[]): string {
-  return links.map((link) => `${pc.cyan(link.id)}  ${link.label}\n  ${link.description}\n  ${link.url}`).join("\n\n");
+  return links.map((link) => `${pc.cyan(link.id)}  ${link.label}\n  ${link.description}\n  ${hyperlink(link.url, link.url)}`).join("\n\n");
+}
+
+export function hyperlink(label: string, url: string): string {
+  if (process.stdout.isTTY) {
+    return `\x1b]8;;${url}\x1b\\${label}\x1b]8;;\x1b\\`;
+  }
+  return label === url ? url : `${label}: ${url}`;
 }
 
 function formatSchedule(startsAt: string | null, endsAt: string | null, room: string | null): string {
@@ -131,6 +140,13 @@ function isNativeInlineImage(value: string): boolean {
   }
 
   return value.includes("\u001B]1337;File=") || value.includes("\u001B_G");
+}
+
+function uniquePrefixLength(ids: string[]): number {
+  for (let len = 4; len <= (ids[0]?.length ?? 0); len++) {
+    if (new Set(ids.map((id) => id.slice(0, len))).size === ids.length) return len;
+  }
+  return ids[0]?.length ?? 0;
 }
 
 function renderHeaderNextToImage(image: string, heading: string, subtitle: string): string {

@@ -39,6 +39,7 @@
   "license": "MIT",
   "dependencies": {
     "commander": "^14.0.3",
+    "jimp": "^1.6.1",
     "open": "^11.0.0",
     "picocolors": "^1.1.1",
     "terminal-image": "^4.2.0"

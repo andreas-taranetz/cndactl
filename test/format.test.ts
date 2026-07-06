@@ -58,14 +58,14 @@ describe("command formatting", () => {
     expect(output).toContain("LinkedIn");
   });
 
-  it("renders speaker heading next to native inline image", async () => {
+  it("renders speaker heading below native inline image", async () => {
     renderSpeakerImageAsciiMock.mockResolvedValueOnce("\u001B]1337;File=abc\u0007");
     const data = normalizeConferenceData(sampleSessionizeData);
     const speaker = data.speakers[0];
     const output = await renderSpeakerDetail(speaker, data.sessions);
 
     expect(output).toContain("\u001B]1337;File=abc\u0007");
-    expect(output).toMatch(/\u001B\]1337;File=abc\u0007\s{20,}(?:\u001B\[1m)?Alex Example/);
+    expect(output).toMatch(/\u001B\]1337;File=abc\u0007\n(?:\u001B\[1m)?Alex Example/);
     expect(output).toContain("Platform Engineer @ Example Labs");
   });
 
@@ -109,8 +109,10 @@ describe("command formatting", () => {
     expect(output).toContain("Unknown speaker");
     expect(output).toContain("No description available.");
     expect(output).toContain("room pending");
-    expect(output).toContain("Live: https://example.com/live");
-    expect(output).toContain("Recording: https://example.com/recording");
+    expect(output).toContain("Live");
+    expect(output).toContain("https://example.com/live");
+    expect(output).toContain("Recording");
+    expect(output).toContain("https://example.com/recording");
   });
 
   it("renders speaker detail fallbacks", async () => {

@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { findSpeaker } from "../data/normalize.js";
 import { type ConferenceData, type EventLink } from "../domain/types.js";
 import { openUrl } from "../platform/open.js";
-import { renderEventLinks } from "./format.js";
+import { hyperlink, renderEventLinks } from "./format.js";
 
 export function registerLinkCommands(getCommand: Command, program: Command, getData: () => Promise<ConferenceData>): void {
   const getLinksCommand = getCommand
@@ -29,7 +29,7 @@ export function registerLinkCommands(getCommand: Command, program: Command, getD
       }
 
       await openUrl(link.url);
-      console.log(`Opened ${link.label}: ${link.url}`);
+      console.log(`Opened ${hyperlink(link.label, link.url)}`);
     });
 
   const openTicketsCommand = openCommand
@@ -44,7 +44,7 @@ export function registerLinkCommands(getCommand: Command, program: Command, getD
       }
 
       await openUrl(link.url);
-      console.log(`Opened ${link.label}: ${link.url}`);
+      console.log(`Opened ${hyperlink(link.label, link.url)}`);
     });
 
   const openWebsiteCommand = openCommand
@@ -59,7 +59,7 @@ export function registerLinkCommands(getCommand: Command, program: Command, getD
       }
 
       await openUrl(link.url);
-      console.log(`Opened ${link.label}: ${link.url}`);
+      console.log(`Opened ${hyperlink(link.label, link.url)}`);
     });
 
   const openSpeakerCommand = openCommand
@@ -82,7 +82,7 @@ export function registerLinkCommands(getCommand: Command, program: Command, getD
       }
 
       await openUrl(link.url);
-      console.log(`Opened ${speaker.fullName} ${link.type}: ${link.url}`);
+      console.log(`Opened ${speaker.fullName} ${hyperlink(link.type, link.url)}`);
     });
 
   const linkExamples = ["cndactl get links"];
