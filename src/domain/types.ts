@@ -61,6 +61,7 @@ export type Speaker = {
   bio: string;
   tagLine: string;
   profilePicture: string;
+  isTopSpeaker: boolean;
   links: SpeakerLink[];
   sessionIds: string[];
 };

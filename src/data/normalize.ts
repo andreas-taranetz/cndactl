@@ -58,6 +58,7 @@ export function normalizeConferenceData(raw: RawSessionizeData): ConferenceData 
       bio: speaker.bio?.trim() ?? "",
       tagLine: speaker.tagLine?.trim() ?? "",
       profilePicture: speaker.profilePicture,
+      isTopSpeaker: speaker.isTopSpeaker,
       links: speaker.links.map(normalizeSpeakerLink),
       sessionIds: speaker.sessions.map((sessionId) => String(sessionId))
     }))
@@ -94,7 +95,7 @@ export function normalizeConferenceData(raw: RawSessionizeData): ConferenceData 
 export function findSpeaker(data: ConferenceData, query: string): Speaker | undefined {
   const normalizedQuery = normalizeQuery(query);
   return data.speakers.find((speaker) => {
-    return speaker.id === query || normalizeQuery(speaker.fullName).includes(normalizedQuery);
+    return speaker.id.startsWith(query) || normalizeQuery(speaker.fullName).includes(normalizedQuery);
   });
 }
 
