@@ -56,7 +56,7 @@ export function renderSessionDetail(session: Session): string {
     "Speakers:",
     speakers,
     "",
-    session.description || "No description available.",
+    wrapText(session.description || "No description available."),
     links ? `\n${links}` : ""
   ].join("\n");
 }
@@ -105,7 +105,7 @@ export async function renderSpeakerDetail(speaker: Speaker, sessions: Session[])
   return [
     headerBlock,
     "",
-    speaker.bio || "No bio available.",
+    wrapText(speaker.bio || "No bio available."),
     "",
     "Talks:",
     talkLines,
@@ -147,6 +147,28 @@ function uniquePrefixLength(ids: string[]): number {
     if (new Set(ids.map((id) => id.slice(0, len))).size === ids.length) return len;
   }
   return ids[0]?.length ?? 0;
+}
+
+function wrapText(text: string, width = process.stdout.columns ?? 80): string {
+  return text
+    .split("\n")
+    .map((paragraph) => {
+      if (paragraph.length <= width) return paragraph;
+      const words = paragraph.split(" ");
+      const lines: string[] = [];
+      let line = "";
+      for (const word of words) {
+        if (line.length + word.length + (line ? 1 : 0) > width) {
+          if (line) lines.push(line);
+          line = word;
+        } else {
+          line = line ? `${line} ${word}` : word;
+        }
+      }
+      if (line) lines.push(line);
+      return lines.join("\n");
+    })
+    .join("\n");
 }
 
 function renderHeaderNextToImage(image: string, heading: string, subtitle: string): string {
