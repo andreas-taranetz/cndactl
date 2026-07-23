@@ -22,24 +22,24 @@ Run without installing globally:
 npx cndactl get sessions
 ```
 
-Or with Bun:
+Or with pnpm:
 
 ```bash
-bunx cndactl get sessions
+pnpm dlx cndactl get sessions
 ```
 
 If you cloned the repository locally:
 
 ```bash
-bun install
-bun run build
+pnpm install
+pnpm run build
 node dist/cli.js get sessions
 ```
 
 For a persistent local command name:
 
 ```bash
-bun run link
+pnpm run link
 cndactl get sessions
 ```
 
