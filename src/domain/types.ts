@@ -45,6 +45,7 @@ export type RawSpeaker = {
 export type RawRoom = {
   id: number | string;
   name: string;
+  sort?: number;
 };
 
 export type SpeakerLink = {
@@ -88,8 +89,14 @@ export type EventLink = {
   description: string;
 };
 
+export type Room = {
+  id: string;
+  name: string;
+};
+
 export type ConferenceData = {
   sessions: Session[];
   speakers: Speaker[];
+  rooms: Room[];
   eventLinks: EventLink[];
 };

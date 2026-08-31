@@ -3,6 +3,7 @@
 import { Command } from "commander";
 
 import { registerLinkCommands } from "./commands/links.js";
+import { registerScheduleCommands } from "./commands/schedule.js";
 import { registerSessionCommands } from "./commands/sessions.js";
 import { registerSpeakerCommands } from "./commands/speakers.js";
 import { normalizeConferenceData } from "./data/normalize.js";
@@ -16,8 +17,8 @@ const program = new Command();
 const getCommand = new Command("get").description("List conference resources");
 const describeCommand = new Command("describe").description("Show detailed resource information");
 const examples = {
-  root: ["cndactl get sessions", "cndactl describe speaker \"Alex Example\"", "cndactl open tickets"],
-  get: ["cndactl get sessions", "cndactl get sess", "cndactl get speakers", "cndactl get spk", "cndactl get links"],
+  root: ["cndactl get sessions", "cndactl get now", "cndactl watch", "cndactl describe speaker \"Alex Example\"", "cndactl open tickets"],
+  get: ["cndactl get sessions", "cndactl get sess", "cndactl get now", "cndactl get now --room 4", "cndactl get speakers", "cndactl get spk", "cndactl get links"],
   describe: ["cndactl describe session 1119590", "cndactl describe sess 1119590", "cndactl describe speaker \"Alex Example\"", "cndactl describe spk example-speaker-id"]
 };
 
@@ -37,6 +38,7 @@ program.addCommand(describeCommand);
 registerSessionCommands(getCommand, describeCommand, getConferenceData);
 registerSpeakerCommands(getCommand, describeCommand, getConferenceData);
 registerLinkCommands(getCommand, program, getConferenceData);
+registerScheduleCommands(getCommand, program, getConferenceData);
 
 program.showHelpAfterError();
 

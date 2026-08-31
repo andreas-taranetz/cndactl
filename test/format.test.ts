@@ -10,7 +10,7 @@ import {
   setRenderSpeakerImageAsciiForTests
 } from "../src/commands/format.js";
 import { normalizeConferenceData } from "../src/data/normalize.js";
-import { sampleSessionizeData } from "./fixtures.js";
+import { sampleSessionizeData, scheduledSessionizeData } from "./fixtures.js";
 
 const renderSpeakerImageAsciiMock = vi.fn<(_: string) => Promise<string>>();
 
@@ -45,6 +45,31 @@ describe("command formatting", () => {
     expect(output).toContain("Agentic AI Under Attack");
     expect(output).toContain("schedule pending");
     expect(output).not.toContain("confirmed");
+  });
+
+  it("renders room and start time for every scheduled talk", () => {
+    const data = normalizeConferenceData(scheduledSessionizeData);
+    const output = renderSessionList(data.sessions);
+
+    expect(output).toContain("Tue 29 Sep · 09:00–09:30 · Room 4");
+    expect(output).toContain("Tue 29 Sep · 09:50–10:20 · Room 6");
+  });
+
+  it("renders room and start time next to each talk of a speaker", async () => {
+    renderSpeakerImageAsciiMock.mockResolvedValueOnce("");
+    const data = normalizeConferenceData(scheduledSessionizeData);
+    const output = await renderSpeakerDetail(data.speakers[0], [data.sessions[0]]);
+
+    expect(output).toContain("- Opening Keynote");
+    expect(output).toContain("Tue 29 Sep · 09:00–09:30 · Room 4");
+  });
+
+  it("names the event time zone in session detail", () => {
+    const data = normalizeConferenceData(scheduledSessionizeData);
+    const output = renderSessionDetail(data.sessions[0]);
+
+    expect(output).toContain("Schedule: Tue 29 Sep · 09:00–09:30 · Room 4");
+    expect(output).toContain("Europe/Vienna");
   });
 
   it("renders speaker detail with accepted talks", async () => {

@@ -1,5 +1,6 @@
 import pc, { bold } from "picocolors";
 
+import { EVENT_TIME_ZONE, getSessionProgress, type RoomSchedule, toMs } from "../domain/schedule.js";
 import { type EventLink, type Session, type Speaker } from "../domain/types.js";
 type RenderSpeakerImageAscii = (...args: any[]) => Promise<string>;
 
@@ -52,7 +53,7 @@ export function renderSessionDetail(session: Session): string {
 
   return [
     `${pc.bold(session.title)}`,
-    `Schedule: ${formatSchedule(session.startsAt, session.endsAt, session.room)}`,
+    `Schedule: ${formatSchedule(session.startsAt, session.endsAt, session.room)}${session.startsAt ? pc.gray(` (${EVENT_TIME_ZONE})`) : ""}`,
     "Speakers:",
     speakers,
     "",
@@ -94,7 +95,9 @@ export async function renderSpeakerDetail(speaker: Speaker, sessions: Session[])
   const heading = `${pc.bold(speaker.fullName)}`;
   const subtitle = speaker.tagLine || "";
   const talkLines = sessions.length
-    ? sessions.map((session) => `- ${session.title}`).join("\n")
+    ? sessions
+        .map((session) => `- ${session.title}\n  ${pc.gray(formatSchedule(session.startsAt, session.endsAt, session.room))}`)
+        .join("\n")
     : "- No talks yet";
   const links = speaker.links.length
     ? speaker.links.map((link) => `- ${hyperlink(`${link.label} (${link.type})`, link.url)}`).join("\n")
@@ -121,6 +124,108 @@ export function renderEventLinks(links: EventLink[]): string {
   return links.map((link) => `${pc.cyan(link.id)}  ${link.label}\n  ${link.description}\n  ${hyperlink(link.url, link.url)}`).join("\n\n");
 }
 
+const STATUS_LABEL_WIDTH = 6;
+const STATUS_INDENT = " ".repeat(2 + STATUS_LABEL_WIDTH);
+
+export function renderRoomSchedules(schedules: RoomSchedule[], nowMs: number): string {
+  if (schedules.length === 0) {
+    return "No scheduled sessions found.";
+  }
+
+  return schedules.map((schedule) => renderRoomSchedule(schedule, nowMs, false)).join("\n\n");
+}
+
+export function renderLiveFrame(schedules: RoomSchedule[], nowMs: number): string {
+  const header = `${pc.bold("Cloud Native Days Austria")}  ${formatDay(nowMs)} ${formatClock(nowMs)} ${pc.gray(EVENT_TIME_ZONE)}`;
+  const body = schedules.length
+    ? schedules.map((schedule) => renderRoomSchedule(schedule, nowMs, true)).join("\n\n")
+    : "No scheduled sessions found.";
+
+  return [header, "", body, "", pc.gray("Press Ctrl+C to exit.")].join("\n");
+}
+
+export function renderProgressBar(ratio: number, width = 24): string {
+  const filled = Math.round(Math.min(Math.max(ratio, 0), 1) * width);
+  return `${pc.cyan("█".repeat(filled))}${pc.gray("░".repeat(width - filled))}`;
+}
+
+function renderRoomSchedule(schedule: RoomSchedule, nowMs: number, withProgress: boolean): string {
+  const lines = [pc.bold(schedule.room)];
+
+  if (schedule.current) {
+    lines.push(...renderCurrentSession(schedule.current, nowMs, withProgress));
+
+    if (schedule.next) {
+      lines.push("", statusLine("NEXT", pc.gray, pc.gray(`${formatStart(schedule.next, nowMs)}  ${sessionTitle(schedule.next)}`)));
+    }
+  } else if (schedule.next) {
+    lines.push(...renderUpcomingSession(schedule.next, nowMs));
+  } else {
+    lines.push(`  ${pc.gray("No more talks scheduled.")}`);
+  }
+
+  return lines.join("\n");
+}
+
+function renderCurrentSession(session: Session, nowMs: number, withProgress: boolean): string[] {
+  const progress = getSessionProgress(session, nowMs);
+  const remaining = progress ? `${formatDuration(progress.remainingMs)} left` : "";
+  const timeRange = `${formatClock(session.startsAt!)}–${formatClock(session.endsAt!)}`;
+  const lines = [
+    statusLine("NOW", pc.green, sessionTitle(session)),
+    `${STATUS_INDENT}${pc.gray(sessionSpeakers(session))}`
+  ];
+
+  if (withProgress && progress) {
+    lines.push(`${STATUS_INDENT}${renderProgressBar(progress.ratio)} ${pc.gray(`${timeRange} · ${remaining}`)}`);
+  } else {
+    lines.push(`${STATUS_INDENT}${pc.gray([timeRange, remaining].filter(Boolean).join(" · "))}`);
+  }
+
+  return lines;
+}
+
+function renderUpcomingSession(session: Session, nowMs: number): string[] {
+  const startsIn = `starts in ${formatDuration(toMs(session.startsAt) - nowMs)}`;
+  const timeRange = `${formatStart(session, nowMs)}–${formatClock(session.endsAt!)}`;
+
+  return [
+    statusLine("NEXT", pc.yellow, sessionTitle(session)),
+    `${STATUS_INDENT}${pc.gray(sessionSpeakers(session))}`,
+    `${STATUS_INDENT}${pc.gray(`${timeRange} · ${startsIn}`)}`
+  ];
+}
+
+function statusLine(label: string, color: (value: string) => string, text: string): string {
+  return `  ${color(label.padEnd(STATUS_LABEL_WIDTH))}${text}`;
+}
+
+// Schedule views are for reading, not for picking up ids to pass to other commands.
+function sessionTitle(session: Session): string {
+  return truncate(session.title, availableWidth());
+}
+
+function sessionSpeakers(session: Session): string {
+  const speakers = session.speakers.map((speaker) => speaker.fullName).join(", ") || "Unknown speaker";
+  return truncate(speakers, availableWidth());
+}
+
+// Talks spanning into another conference day need the date to stay unambiguous.
+function formatStart(session: Session, nowMs: number): string {
+  const startsAt = session.startsAt!;
+  const clock = formatClock(startsAt);
+  return formatDay(startsAt) === formatDay(nowMs) ? clock : `${formatDay(startsAt)} ${clock}`;
+}
+
+// Terminals without a reported width (pipes, some pty wrappers) report 0 columns.
+function availableWidth(): number {
+  return Math.max((process.stdout.columns || 80) - STATUS_INDENT.length, 20);
+}
+
+function truncate(value: string, width: number): string {
+  return value.length <= width ? value : `${value.slice(0, Math.max(width - 1, 1))}…`;
+}
+
 export function hyperlink(label: string, url: string): string {
   if (process.stdout.isTTY) {
     return `\x1b]8;;${url}\x1b\\${label}\x1b]8;;\x1b\\`;
@@ -128,10 +233,53 @@ export function hyperlink(label: string, url: string): string {
   return label === url ? url : `${label}: ${url}`;
 }
 
+const dayFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: EVENT_TIME_ZONE,
+  weekday: "short",
+  day: "numeric",
+  month: "short"
+});
+
+const clockFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: EVENT_TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+});
+
+export function formatDay(timestamp: string | number): string {
+  const parts = dayFormatter.formatToParts(new Date(timestamp));
+  const part = (type: Intl.DateTimeFormatPartTypes): string => parts.find((entry) => entry.type === type)?.value ?? "";
+  // en-GB renders September as "Sept"; three letters keep every day the same width.
+  return `${part("weekday")} ${part("day")} ${part("month").slice(0, 3)}`;
+}
+
+export function formatClock(timestamp: string | number): string {
+  return clockFormatter.format(new Date(timestamp));
+}
+
+export function formatDuration(durationMs: number): string {
+  const totalMinutes = Math.floor(durationMs / 60_000);
+
+  if (totalMinutes < 1) {
+    return `${Math.max(Math.floor(durationMs / 1000), 0)}s`;
+  }
+
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+
+  return hours > 0 ? `${hours}h ${String(minutes).padStart(2, "0")}m` : `${minutes}m`;
+}
+
 function formatSchedule(startsAt: string | null, endsAt: string | null, room: string | null): string {
-  const time = startsAt && endsAt ? `${startsAt} - ${endsAt}` : "schedule pending";
+  const time = startsAt && endsAt ? `${formatDay(startsAt)} · ${formatClock(startsAt)}–${formatClock(endsAt)}` : "schedule pending";
   const roomLabel = room ?? "room pending";
-  return `${time} | ${roomLabel}`;
+  return `${time} · ${roomLabel}`;
 }
 
 function isNativeInlineImage(value: string): boolean {

@@ -2,6 +2,7 @@ import {
   type ConferenceData,
   type EventLink,
   type RawSessionizeData,
+  type Room,
   type Session,
   type Speaker,
   type SpeakerLink
@@ -47,7 +48,16 @@ export const EVENT_LINKS: EventLink[] = [
 ];
 
 export function normalizeConferenceData(raw: RawSessionizeData): ConferenceData {
-  const roomNames = new Map(raw.rooms.map((room) => [String(room.id), room.name]));
+  const rooms = raw.rooms
+    .map((room, index): Room & { sort: number } => ({
+      id: String(room.id),
+      name: room.name,
+      sort: room.sort ?? index
+    }))
+    .sort((left, right) => left.sort - right.sort)
+    .map(({ id, name }): Room => ({ id, name }));
+
+  const roomNames = new Map(rooms.map((room) => [room.id, room.name]));
 
   const speakers = raw.speakers
     .map((speaker): Speaker => ({
@@ -88,6 +98,7 @@ export function normalizeConferenceData(raw: RawSessionizeData): ConferenceData 
   return {
     sessions,
     speakers,
+    rooms,
     eventLinks: EVENT_LINKS
   };
 }
