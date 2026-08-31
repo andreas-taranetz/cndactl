@@ -5,6 +5,10 @@ import { normalizeConferenceData } from "../src/data/normalize.js";
 import { getRoomSchedules, getSessionProgress, resolveRoom } from "../src/domain/schedule.js";
 import { scheduledSessionizeData } from "./fixtures.js";
 
+// picocolors colours its output on CI but not on a plain local run, so assertions
+// that span a colour boundary have to look at the text without the escape codes.
+const plain = (value: string): string => value.replace(/\u001B\[[0-9;]*m/g, "");
+
 const data = normalizeConferenceData(scheduledSessionizeData);
 const duringKeynote = Date.parse("2026-09-29T07:10:00Z");
 const betweenTalks = Date.parse("2026-09-29T07:40:00Z");
@@ -75,7 +79,7 @@ describe("room schedules", () => {
 
 describe("schedule formatting", () => {
   it("renders the running talk with its room, time and remaining minutes", () => {
-    const output = renderRoomSchedules(getRoomSchedules(data, duringKeynote), duringKeynote);
+    const output = plain(renderRoomSchedules(getRoomSchedules(data, duringKeynote), duringKeynote));
 
     expect(output).toContain("Room 4");
     expect(output).toContain("NOW");
@@ -86,14 +90,14 @@ describe("schedule formatting", () => {
   });
 
   it("separates the running talk from the next one with an empty line", () => {
-    const output = renderRoomSchedules(getRoomSchedules(data, duringKeynote, "Room 4"), duringKeynote);
+    const output = plain(renderRoomSchedules(getRoomSchedules(data, duringKeynote, "Room 4"), duringKeynote));
     const lines = output.split("\n");
 
     expect(lines[lines.findIndex((line) => line.includes("NEXT")) - 1]).toBe("");
   });
 
   it("renders upcoming talks with a countdown", () => {
-    const output = renderRoomSchedules(getRoomSchedules(data, betweenTalks, "Room 6"), betweenTalks);
+    const output = plain(renderRoomSchedules(getRoomSchedules(data, betweenTalks, "Room 6"), betweenTalks));
 
     expect(output).toContain("NEXT");
     expect(output).toContain("Parallel Track Talk");
@@ -101,14 +105,14 @@ describe("schedule formatting", () => {
   });
 
   it("renders an empty state once the schedule is over", () => {
-    const output = renderRoomSchedules(getRoomSchedules(data, afterConference), afterConference);
+    const output = plain(renderRoomSchedules(getRoomSchedules(data, afterConference), afterConference));
 
     expect(output).toContain("No more talks scheduled.");
-    expect(renderRoomSchedules([], afterConference)).toBe("No scheduled sessions found.");
+    expect(plain(renderRoomSchedules([], afterConference))).toBe("No scheduled sessions found.");
   });
 
   it("renders a live frame with clock, progress bar and exit hint", () => {
-    const output = renderLiveFrame(getRoomSchedules(data, duringKeynote), duringKeynote);
+    const output = plain(renderLiveFrame(getRoomSchedules(data, duringKeynote), duringKeynote));
 
     expect(output).toContain("Tue 29 Sep 09:10 Europe/Vienna");
     expect(output).toContain("█");
@@ -120,17 +124,17 @@ describe("schedule formatting", () => {
   it("omits session ids from both schedule views", () => {
     const schedules = getRoomSchedules(data, duringKeynote);
 
-    for (const output of [renderRoomSchedules(schedules, duringKeynote), renderLiveFrame(schedules, duringKeynote)]) {
+    for (const output of [plain(renderRoomSchedules(schedules, duringKeynote)), plain(renderLiveFrame(schedules, duringKeynote))]) {
       expect(output).toContain("Opening Keynote");
       expect(output).not.toContain("2001");
     }
   });
 
   it("fills the progress bar proportionally", () => {
-    expect(renderProgressBar(0, 4)).toContain("░░░░");
-    expect(renderProgressBar(0.5, 4)).toContain("██");
-    expect(renderProgressBar(1, 4)).toContain("████");
-    expect(renderProgressBar(2, 4)).toContain("████");
+    expect(plain(renderProgressBar(0, 4))).toBe("░░░░");
+    expect(plain(renderProgressBar(0.5, 4))).toBe("██░░");
+    expect(plain(renderProgressBar(1, 4))).toBe("████");
+    expect(plain(renderProgressBar(2, 4))).toBe("████");
   });
 
   it("formats durations from seconds up to days", () => {
