@@ -4,10 +4,31 @@
 
 ## Features
 
-- Browse conference sessions from Sessionize
+- Browse conference sessions from Sessionize, including room and start time
+- See the current or upcoming talk in every room
+- Follow a live updating view with a progress bar for the running talk
 - Explore speakers, bios, and speaker links
 - List core event links such as tickets, venue, and website
 - Open tickets, website, venue, and speaker URLs in the browser
+
+## Demo
+
+What is on right now, in every room:
+
+![cndactl get now](demo/get-now.gif)
+
+`cndactl watch` keeps that view up to date and shows how much of the running talk is left:
+
+![cndactl watch](demo/watch.gif)
+
+Both recordings are scripted with [vhs](https://github.com/charmbracelet/vhs) and use a faked clock, so they show the conference in full swing. To re-record them:
+
+```bash
+vhs demo/get-now.tape
+vhs demo/watch.tape
+```
+
+The tapes call `scripts/demo-clock.ts`, which runs the CLI at a fixed point in time (`CNDACTL_DEMO_NOW`) and optionally faster than real time (`CNDACTL_DEMO_SPEED`), so a few seconds of recording cover half an hour of conference.
 
 ## Requirements
 
@@ -50,6 +71,10 @@ cndactl get sessions
 cndactl get sess
 cndactl describe session 1119590
 cndactl describe sess 1119590
+cndactl get now
+cndactl get now --room "Room 4"
+cndactl watch
+cndactl watch --room 6 --interval 5
 cndactl get speakers
 cndactl get spk
 cndactl describe speaker "Alex Example"
@@ -66,11 +91,25 @@ cndactl open speaker "Alex Example" linkedin
 
 `cndactl get sessions`
 
-- Lists sessions from the configured Sessionize feed.
+- Lists sessions from the configured Sessionize feed, each with its room and start time.
 
 `cndactl describe session <query>`
 
 - Shows a single session by exact id or partial title match.
+
+`cndactl get now`
+
+- Shows the talk currently running in every room, or the next one when a room is between slots.
+- Adds the remaining time for a running talk and a countdown for an upcoming one.
+- `--room <room>` limits the output to one room. The filter is forgiving: `--room "Room 4"`, `--room room4`, and `--room 4` all work.
+- Also available as `cndactl get current`.
+
+`cndactl watch`
+
+- Live updating version of `cndactl get now`, with a progress bar showing how much of the running talk is left.
+- Redraws every second; change that with `--interval <seconds>`.
+- `--room <room>` limits the view to one room.
+- Runs in the alternate screen buffer and restores the terminal on `Ctrl+C`. When the output is piped or redirected, it prints a single frame instead.
 
 `cndactl get speakers`
 
@@ -114,6 +153,8 @@ The CLI reads from the Sessionize `All` endpoint for event key `7o54a33i`:
 `https://sessionize.com/api/v2/7o54a33i/view/All`
 
 The app currently trusts that this feed is already configured to expose the intended public speaker and session set.
+
+Sessionize returns session times in UTC. All times are displayed in the event time zone `Europe/Vienna`, so they match the printed schedule on site regardless of where you run the CLI.
 
 Sessionize data is cached locally in the operating system cache directory (for example `~/.cache/cndactl` on Linux/macOS, `%LOCALAPPDATA%\\cndactl` on Windows). The cache is refreshed every 30 minutes by default.
 
